@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-const vid_reg = /https:\/\/cdn.discordapp.com\/attachments\/\d+\/\d+\/[^.]+.(mp4|mov)/g
+const vid_reg = /https:\/\/cdn.discordapp.com\/attachments\/\d+\/\d+\/[\s\S]+?.(mp4|mov|webm)/g
 const channels_reg = /\s*,\s*/g
 const channelNames: { [key: string]: string } = {}
 
