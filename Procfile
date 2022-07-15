@@ -1,0 +1,1 @@
+worker: tsc --build && node build/index.js
