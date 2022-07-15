@@ -1,10 +1,11 @@
 {
-  "name": "discord-scraper",
+  "name": "discord-utils",
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
   "scripts": {
-    "postinstall": "tsc",
+    "build": "tsc",
+    "postinstall": "npm run build",
     "test": "tsc --build && clear && node ."
   },
   "keywords": [],
