@@ -4,6 +4,7 @@
   "description": "",
   "main": "build/index.js",
   "scripts": {
+    "postinstall": "tsc",
     "test": "tsc --build && clear && node ."
   },
   "keywords": [],
