@@ -32,7 +32,6 @@ ws.on('message', async (data: string) => {
       break;
 
     case 10:
-      console.log(JSON.stringify(JSON.parse(data), null, 2));
       console.log("Websocket is ready!");
       setInterval(hb, d.heartbeat_interval);
       break;
