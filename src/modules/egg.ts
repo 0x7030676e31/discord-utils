@@ -9,12 +9,12 @@ module.exports = {
       return
 
     try {
-      fetch(`https://discord.com/api/v9/channels/${d.channel_id}/messages/${d.id}/reactions/%F0%9F%8D%B3/@me`, {
-      method: "PUT",  
-      headers: {
-        "Authorization": process.env.token!,
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
-      },
+      fetch(encodeURI(`https://discord.com/api/v9/channels/${d.channel_id}/messages/${d.id}/reactions/${process.env.egg }/@me`), {
+        method: "PUT",  
+        headers: {
+          "Authorization": process.env.token!,
+          "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0",
+        },
       }); 
     } catch (e) {
       console.log(e);
