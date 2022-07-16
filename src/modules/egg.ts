@@ -9,7 +9,7 @@ module.exports = {
       return
 
     try {
-      fetch(encodeURI(`https://discord.com/api/v9/channels/${d.channel_id}/messages/${d.id}/reactions/${process.env.egg }/@me`), {
+      fetch(encodeURI(`https://discord.com/api/v9/channels/${d.channel_id}/messages/${d.id}/reactions/${process.env.egg}/@me`), {
         method: "PUT",  
         headers: {
           "Authorization": process.env.token!,
