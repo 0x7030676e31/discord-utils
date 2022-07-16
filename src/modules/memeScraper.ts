@@ -25,8 +25,6 @@ module.exports = {
     const linkVideos: string[] = d.content ? d.content.match(vid_reg) || [] : [];
     const attachments: any[] = d.attachments ? d.attachments : [];
 
-    console.log(linkVideos);
-
     if (linkVideos.length === 0 && attachments.length === 0)
       return
 
