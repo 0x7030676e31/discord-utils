@@ -6,20 +6,21 @@ const queue: {channel: string, id: string}[] = []
 let lastReaction = 0;
 
 export default {
+  env: [ "egg", "rare_egg", "rare_egg_chance", "egg_cooldown" ],
   events: [ "MESSAGE_CREATE" ],
   execute(_op: number, d: any, _t: string) {
     if (!d.content || !egg_reg.test(d.content))
       return
 
     queue.push({channel: d.channel_id, id: d.id});
-    const deltaT = (lastReaction + queue.length * +(process.env.cooldown!)) - new Date().getTime();
+    const deltaT = (lastReaction + queue.length * +(process.env.egg_cooldown!)) - new Date().getTime();
 
     if (deltaT <= 0) {
       queueShift();
       return
     }
 
-    lastReaction = new Date().getTime() + queue.length * +(process.env.cooldown!);
+    lastReaction = new Date().getTime() + queue.length * +(process.env.egg_cooldown!);
     setTimeout(queueShift, deltaT);
   }
 }

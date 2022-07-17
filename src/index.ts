@@ -8,11 +8,13 @@ import init from "./init.json";
 env.config();
 
 const files = fs.readdirSync("./build/modules").filter(v => v.endsWith(".js")).map(v => v.slice(0, -3));
-const modules: {events: string[]; ready?: Function; execute: Function }[] = files.map(v => require(`./modules/${v}`).default) as any;
+const modules: Module[] = files.map(v => require(`./modules/${v}`).default) as any;
 
 if (!process.env.token)
   throw new Error("The token is required");
   init.d.token = process.env.token;
+
+modules.forEach(m => m.env && m.env.forEach(v => process.env[v] === undefined && (() => { console.log(`Env var "${v}" is required`); process.exit(0); })()));
 
 const ws = new websocket("wss://gateway.discord.gg/?encoding=json&v=9");
 
@@ -57,3 +59,10 @@ ws.on("close", (data: number) => {
   console.log(`Connection hsa beed closed with code ${data}`);
   process.exit(1);
 });
+
+interface Module {
+  env?: string[];
+  events: string[];
+  ready?: Function;
+  execute: Function
+}

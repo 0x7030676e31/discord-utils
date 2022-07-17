@@ -6,9 +6,10 @@ const channelNames: { [key: string]: string } = {}
 
 let channels: string[] = [];
 export default {
+  env: [ "meme_target", "meme_webhook" ],
   events: [ "MESSAGE_CREATE" ],
   ready(d: any) {
-    channels = process.env.target!.split(channels_reg) as any;
+    channels = process.env.meme_target!.split(channels_reg) as any;
     d.guilds.forEach((g: any) => g.channels.forEach((c: any) => channels.includes(c.id) && (channelNames[c.id] = c.name)));
 
     console.log(`MemeScraper: Loaded all ${channels.length} channels`);
@@ -41,7 +42,7 @@ export default {
     if (linkVideos.length === 0 && embeds.length === 0)
       return
 
-    fetch(process.env.webhook!, {
+    fetch(process.env.meme_webhook!, {
       method: "POST",
       body: JSON.stringify({
         ...(linkVideos.length && { content: linkVideos.join("\n") }),
