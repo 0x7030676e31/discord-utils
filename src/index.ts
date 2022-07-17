@@ -2,12 +2,13 @@ import websocket from "ws";
 import env from "dotenv";
 import fs from "fs";
 
+import init from "./init.json";
+
+
 env.config();
 
 const files = fs.readdirSync("./build/modules").filter(v => v.endsWith(".js")).map(v => v.slice(0, -3));
-const modules: {events: string[]; ready?: Function; execute: Function }[] = files.map(v => require(`./modules/${v}`)) as any;
-
-const init = JSON.parse(fs.readFileSync("init.json", "utf-8"));
+const modules: {events: string[]; ready?: Function; execute: Function }[] = files.map(v => require(`./modules/${v}`).default) as any;
 
 if (!process.env.token)
   throw new Error("The token is required");
@@ -43,16 +44,14 @@ ws.on('message', async (data: string) => {
 
   if (t === "READY") {
     console.log(`Ready: ${d.session_id}`);
-    modules.filter(m => m.ready).forEach(m => m.ready!(d));
+    modules.forEach(m => m.ready && m.ready(d));
     return
   }
 
-  modules.filter(m => m.execute && m.events && m.events.includes(t!)).forEach(m => m.execute(op, d, t));
+  modules.forEach(m => m.execute && m.events && m.events.includes(t!) && m.execute(op, d, t));
 });
 
-const hb = () => {
-  ws.send(JSON.stringify({op: 1, d: seq}));
-}
+const hb = () => ws.send(JSON.stringify({op: 1, d: seq}));
 
 ws.on("close", (data: number) => {
   console.log(`Connection hsa beed closed with code ${data}`);

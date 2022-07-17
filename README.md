@@ -7,3 +7,4 @@
 
 ## egg
 - egg: egg
+- timeout: milliseconds between requests

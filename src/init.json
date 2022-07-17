@@ -1,6 +1,7 @@
 {
   "op": 2,
   "d": {
+    "token": "",
     "capabilities": 509,
     "properties": {
       "os": "Linux",

@@ -1,25 +1,20 @@
 import fetch from "node-fetch";
 
-const vid_reg = /https:\/\/cdn.discordapp.com\/attachments\/\d+\/\d+\/[\s\S]+?.(mp4|mov|webm)/g
+const vid_reg = /https:\/\/(cdn|media).discordapp.com\/attachments\/\d+\/\d+\/[\s\S]+?.(mp4|mov|webm)/g
 const channels_reg = /\s*,\s*/g
 const channelNames: { [key: string]: string } = {}
 
 let channels: string[] = [];
-module.exports = {
+export default {
   events: [ "MESSAGE_CREATE" ],
   ready(d: any) {
     channels = process.env.target!.split(channels_reg) as any;
-    d.guilds.reduce((prev: any[], curr: any) => prev.concat(curr.channels), [] as any[]).forEach((c: any) => {
-      if (!channels.includes(c.id))
-        return
-
-      channelNames[c.id] = c.name
-    });
+    d.guilds.forEach((g: any) => g.channels.forEach((c: any) => channels.includes(c.id) && (channelNames[c.id] = c.name)));
 
     console.log(`MemeScraper: Loaded all ${channels.length} channels`);
   },
   execute(_op: number, d: any, _t: string) {
-    if (!channels.includes(d.channel_id))
+    if (!channels.includes(d.channel_id) || d.author.bot)
       return
 
     const linkVideos: string[] = d.content ? d.content.match(vid_reg) || [] : [];
@@ -34,7 +29,7 @@ module.exports = {
         return
 
       if (v.content_type.startsWith("image/")) {
-        embeds.push({ image: { url: v.url }, footer: { text: `${v.file_ame}; ${v.height}x${v.width}` } });
+        embeds.push({ image: { url: v.url }, footer: { text: `${v.filename}; ${v.height}x${v.width}` } });
         return
       }
       
