@@ -7,4 +7,6 @@
 
 ## egg
 - egg: egg
+- rare_egg: just rare egg
+- rare_egg_chance: chance for rare egg (in %)
 - timeout: milliseconds between requests

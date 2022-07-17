@@ -7,15 +7,15 @@ class Queue {
 
   add(channel: string, id: string) {
     this.queue.push({ channel, id });
-    console.log(this.queue);
     
     if (this.queue.length === 1)
       setTimeout(() => this.react(this), this.cooldown);
   }
 
   react(self: Queue) {
+    const egg = Math.random() * 100 > +(process.env.rare_egg_chance!) ? process.env.egg : process.env.rare_egg;
     try {
-      fetch(encodeURI(`https://discord.com/api/v9/channels/${self.queue[0].channel}/messages/${self.queue[0].id}/reactions/${process.env.egg}/@me`), {
+      fetch(encodeURI(`https://discord.com/api/v9/channels/${self.queue[0].channel}/messages/${self.queue[0].id}/reactions/${egg}/@me`), {
         method: "PUT",  
         headers: {
           "Authorization": process.env.token!,
