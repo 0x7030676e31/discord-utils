@@ -14,7 +14,7 @@ export default {
 
     console.log(`MemeScraper: Loaded all ${channels.length} channels`);
   },
-  async execute(_op: number, d: any, _t: string) {
+  async execute(d: any, _: string) {
     if (!channels.includes(d.channel_id) || d.author.bot)
       return
 
