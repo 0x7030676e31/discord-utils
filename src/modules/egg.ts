@@ -1,35 +1,41 @@
 import fetch from "node-fetch";
 
 const egg_reg = /(?<![a-z])egg/i
-
-const queue: {channel: string, id: string}[] = []
-let lastReaction = 0;
+const queue: queueSlot[] = [];
 
 export default {
   env: [ "egg", "rare_egg", "rare_egg_chance", "egg_cooldown" ],
   events: [ "MESSAGE_CREATE" ],
-  execute(_op: number, d: any, _t: string) {
+  async execute(_op: number, d: any, _t: string) {
     if (!d.content || !egg_reg.test(d.content))
       return
 
-    queue.push({channel: d.channel_id, id: d.id});
-    const deltaT = (lastReaction + queue.length * +(process.env.egg_cooldown!)) - new Date().getTime();
-
-    if (deltaT <= 0) {
-      queueShift();
-      return
-    }
-
-    lastReaction = new Date().getTime() + queue.length * +(process.env.egg_cooldown!);
-    setTimeout(queueShift, deltaT);
+    queueAdd(d);
   }
 }
 
-function queueShift() {
+
+async function queueAdd({ channel_id, id }: queueSlot) {
+  queue.push({ channel_id, id });
+
+  if (queue.length === 1) {
+    queueNext();
+  }
+}
+
+const queueShift = async () => {
+  queue.shift();
+  if (queue.length > 0) {
+    queueNext();
+  }
+}
+
+async function queueNext() {
+  const { channel_id, id } = queue[0];
   const egg = Math.random() * 100 > +(process.env.rare_egg_chance!) ? process.env.egg : process.env.rare_egg;
-  const target = queue.shift()!;
+
   try {
-    fetch(encodeURI(`https://discord.com/api/v9/channels/${target.channel}/messages/${target.id}/reactions/${egg}/@me`), {
+    await fetch(encodeURI(`https://discord.com/api/v9/channels/${channel_id}/messages/${id}/reactions/${egg}/@me`), {
       method: "PUT",  
       headers: {
         "Authorization": process.env.token!,
@@ -37,6 +43,13 @@ function queueShift() {
       },
     });
   } catch (e) {
-    // most likely dont have perms to react
+    // most likely dont have perms to react or other discord stuff
   }
+
+  setTimeout(queueShift, +(process.env.egg_cooldown!));
+}
+
+interface queueSlot {
+  channel_id: string;
+  id: string;
 }

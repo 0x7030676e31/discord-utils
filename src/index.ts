@@ -12,7 +12,8 @@ const modules: Module[] = files.map(v => require(`./modules/${v}`).default) as a
 
 if (!process.env.token)
   throw new Error("The token is required");
-  init.d.token = process.env.token;
+
+init.d.token = process.env.token;
 
 modules.forEach(m => m.env && m.env.forEach(v => process.env[v] === undefined && (() => { console.log(`Env var "${v}" is required`); process.exit(0); })()));
 
