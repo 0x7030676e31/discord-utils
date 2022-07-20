@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import websocketHandler from "../wsHandler";
 
 const egg_reg = /(?<![a-z])egg/i
@@ -12,7 +11,7 @@ export default {
     ctx = context;
   },
   async execute(d: any, _: string) {
-    if (!d.content || !egg_reg.test(d.content))
+    if (!d.content || (!egg_reg.test(d.content) && !d.content.includes(process.env.egg)))
       return
 
     queueAdd(d);

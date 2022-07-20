@@ -10,9 +10,11 @@ const ws = new wsHandler()
   .on("open", () => console.log("New websocket has been initialized"))
   .on("ready", () => console.log("New websocket is ready"))
   .on("heartbeat", (seq: number) => console.log(`Server responded to heartbeat; ${seq}`))
-  .on("switch", (ws: any[]) => console.log(`Switching between websockets; old: ${ws[0].seq}; new: ${ws[1].seq}`));
+  .on("switch", (ws: any[]) => console.log(`Switching between websockets; old: ${ws[0].seq}; new: ${ws[1].seq}`))
+  .on("close", (code: number) => console.log(`Websocket has been closed: ${code}; ${ws.getFailedLength()} failures in total`));
 
 // console.log(`Loaded ${ws.loadModules()} modules`);
 
 ws.createNewConnection(true);
-setTimeout(ws.createNewConnection, 30 * 60 * 1000, false);
+setTimeout(ws.createNewConnection.bind(ws), 45 * 1000, false);
+setTimeout(ws.switchWebsocket.bind(this), 100 * 1000);

@@ -4,7 +4,6 @@ import fs from "fs";
 import init from "./init.json";
 import Api from "./api";
 
-let ctx: websocketHandler;
 export default class websocketHandler {
   modules: Module[] = [];
   websockets: SocketQueue[] = [];
@@ -25,152 +24,161 @@ export default class websocketHandler {
     init.d.token = process.env.token!;
     this.init = init;
     this.api = new Api(init.d.properties.browser_user_agent, init.d.token);
-    ctx = this;
   }
 
   on(event: Event, callback: Function) {
-    ctx.events[event].push(callback);
+    this.events[event].push(callback);
 
-    return ctx
+    return this
   }
 
   async message(payload: string) {
     const { op, d, s, t }: Payload = JSON.parse(payload);
 
-    if (s) ctx.websockets[0].seq = s;
-    ctx.handleOP(op, d);
+    if (s) this.websockets[0].seq = s;
+    this.handleOP(op, d);
 
     if (t === "READY") {
-      ctx.events.ready.forEach((f) => f());
-      if (!ctx.initialized) ctx.modules.forEach((m) => m.ready?.(d, ctx));
-      ctx.initialized = true;
+      this.events.ready.forEach((f) => f());
+      if (!this.initialized) this.modules.forEach((m) => m.ready?.(d, this));
+      this.initialized = true;
       return
     }
 
-    ctx.modules.forEach((m) => m.events.includes(t!) && m.execute(d, t, ctx));
+    this.modules.forEach((m) => m.events.includes(t!) && m.execute.apply(this, [d, t]));
   }
 
   async handleOP(op: number, d: any) {
     switch (op) {
       case 1:
-        ctx.heartbeat(0);
+        this.heartbeat(0);
         break;
 
       case 10:
-        ctx.websockets[0].heartbeat = setInterval(ctx.heartbeat, d.heartbeat_interval, 0);
+        this.websockets[0].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, 0);
         break;
 
       case 11:
-        ctx.events.heartbeat.forEach((f) => f(ctx.websockets[0].seq));
+        this.events.heartbeat.forEach((f) => f(this.websockets[0].seq));
         break;
     }
   }
 
   async heartbeat(id: number) {
-    ctx.websockets[id].ws.send(
-      JSON.stringify({ op: 1, d: ctx.websockets[id].seq })
+    this.websockets[id].ws.send(
+      JSON.stringify({ op: 1, d: this.websockets[id].seq })
     );
+    console.log(id);
   }
 
   async messageBackup(payload: string) {
     const { op, d, s, t }: Payload = JSON.parse(payload);
 
-    if (s) ctx.websockets[1].seq = s;
+    if (s) this.websockets[1].seq = s;
 
     if (op === 1)
-      ctx.heartbeat(1);
+      this.heartbeat(1);
     else if (op === 10)
-      ctx.websockets[1].heartbeat = setInterval(ctx.heartbeat, d.heartbeat_interval, 1);
+      this.websockets[1].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, 1);
 
-    if (t === "READY") ctx.events.ready.forEach((f) => f());
+    if (t === "READY") this.events.ready.forEach((f) => f());
   }
 
   loadModules(checkEnv: boolean = true) {
     const files = fs
       .readdirSync("./build/modules/")
       .filter((f) => f.endsWith(".js"));
-      ctx.modules = files
+    
+    this.modules = files
       .map((f) => require(`./modules/${f}`).default)
       .filter((m) => m?.execute && m?.events);
 
-    if (checkEnv) ctx.checkEnv();
+    if (checkEnv) this.checkEnv();
 
-    return ctx.modules.length;
+    return this.modules.length;
   }
 
   checkEnv() {
-    ctx.modules.forEach((m) => m.env?.forEach((v) =>
+    this.modules.forEach((m) => m.env?.forEach((v) =>
         !process.env[v]
           ? (() => { throw new Error(`Env var ${JSON.stringify(v)} is required`) })()
           : null
       )
     );
-    return ctx;
+    return this;
   }
 
   switchWebsocket() {
-    ctx.events.switch.forEach((f) => f(ctx.websockets));
+    this.events.switch.forEach((f) => f(this.websockets));
 
-    clearInterval(ctx.websockets[0].heartbeat);
-    ctx.websockets.shift();
+    clearInterval(this.websockets[0].heartbeat);
+    this.websockets[0].ws.removeAllListeners();
+    this.websockets.shift();
 
-    const ws = ctx.websockets[0].ws;
+    const ws = this.websockets[0].ws;
     ws.removeAllListeners();
-    ws.on("message", ctx.message);
-    ws.on("close", (code: number) => ctx.closeMain(code));
+    ws.on("message", this.message.bind(this));
+    ws.on("close", this.closeMain.bind(this));
 
-    ctx.createNewConnection(false);
+    this.createNewConnection.apply(this, [false]);
 
-    return ctx;
+    return this;
+  }
+
+  getFailedLength() {
+    return this.wsFailed.filter(v => v !== 1006).length;
   }
 
   close(code: number) {
-    ctx.events.close.forEach((f) => f(code));
-    ctx.wsFailed.push(code);
+    this.wsFailed.push(code);
+    this.events.close.forEach((f) => f(code));
     if (code === 1006)
       return
 
-    if (ctx.wsFailed.filter(v => v !== 1006).length !== 5)
+    if (this.getFailedLength() !== 5) {
       return
+    }
   
-    throw new Error(`Websocket has been closed: ${ctx.wsFailed}`);
+    throw new Error(`Websocket has been closed: ${this.wsFailed}`);
   }
 
   closeMain(code: number) {
-    ctx.close(code);
-    ctx.switchWebsocket();
+    console.log(`Closing Main: ${code}`);
+    this.close(code);
+    this.switchWebsocket();
   }
 
   closeBackup(code: number) {
-    ctx.close(code);
+    console.log(`Closing Backup: ${code}`);
+    this.close(code);
     
-    clearInterval(ctx.websockets[1].heartbeat);
-    ctx.websockets.pop();
-    ctx.createNewConnection(false);
+    clearInterval(this.websockets[1].heartbeat);
+    this.websockets.pop();
+    this.createNewConnection.apply(this, [false]);
   }
 
   createNewConnection(asMain: boolean) {
-    ctx.websockets.push({
+    this.websockets.push({
       ws: new websocket("wss://gateway.discord.gg/?encoding=json&v=9"),
       seq: 0,
     });
-    const ws = ctx.websockets[ctx.websockets.length - 1].ws;
+    const ws = this.websockets[this.websockets.length - 1].ws;
 
     ws.once("open", () => {
-      ctx.events.open.forEach((f) => f());
+      this.events.open.forEach((f) => f());
       ws.send(JSON.stringify(init));
     });
 
     if (asMain) {
-      ws.on("message", ctx.message);
-      ws.on("close", ctx.closeMain);
-      return ctx
+      ws.on("message", this.message.bind(this));
+      ws.on("close", this.closeMain.bind(this));
+      return this
     }
     
-    ws.on("message", ctx.messageBackup);
-    ws.on("close", ctx.closeBackup);
+    ws.on("message", this.messageBackup.bind(this));
+    ws.on("close", this.closeBackup.bind(this));
 
-    return ctx
+    return this
   }
 }
 
