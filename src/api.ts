@@ -25,7 +25,11 @@ export default class Api {
       }
     });
 
-    return await response.json();
+    try {
+      return await response.json();
+    } catch (err) {
+      return null
+    }
   }
 }
 

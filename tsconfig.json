@@ -4,7 +4,7 @@
     "module": "commonjs",
     "rootDir": "./src",
     "outDir": "./build",
-    "removeComments": false,
+    "removeComments": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
