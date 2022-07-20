@@ -1,14 +1,15 @@
 import websocketHandler from "../wsHandler";
 
 const egg_reg = /(?<![a-z])egg/i
-const queue: queueSlot[] = [];
 
+let queue: Queue;
 let eggs: string[]
 let ctx: websocketHandler
 export default {
   env: [ "egg", "rare_egg", "rare_egg_chance", "egg_cooldown" ],
   events: [ "MESSAGE_CREATE", "MESSAGE_UPDATE" ],
   async ready(_: any, context: websocketHandler) {
+    queue = new Queue();
     eggs = [ process.env.egg!, process.env.rare_egg! ];
     ctx = context;
   },
@@ -17,68 +18,75 @@ export default {
       if (!d.content || !egg_reg.test(d.content))
         return
 
-      queueAdd(d, "PUT");
+      queue.add(d, "PUT");
       return
     }
 
-    queueAdd(d, "GET");
+    queue.add(d, "GET");
   }
 }
 
+class Queue {
+  queue: queueSlot[] = [];
 
-const fetchMessageReaction = async (id: string, channel: string) => (await ctx.api.fetch({
-  method: "GET",
-  urlPath: { channels: channel },
-  endpoint: "messages",
-  query: {
-    around: id,
-    limit: 1,
-  }
-}))[0].reactions?.find((v: any) => v.me && eggs.includes(v.emoji.name.trim())) ? true : false;
-
-const reactionAction = async (id: string, channel: string, method: "PUT" | "DELETE") => await ctx.api.fetch({
-  method: method,
-  urlPath: {
-    channels: channel,
-    messages: id,
-    reactions: Math.random() * 100 > +(process.env.rare_egg_chance!) ? process.env.egg! : process.env.rare_egg!
-  },
-  endpoint: "@me"
-});
-
-
-async function queueAdd({ channel_id, id, content }: queueSlot, method: "PUT" | "GET" | "DELETE") {
-  queue.push({ channel_id, id, content: content || "", method });
-
-  if (queue.length === 1) {
-    queueNext();
-  }
-}
-
-const queueShift = async () => {
-  queue.shift();
-  if (queue.length > 0) {
-    queueNext();
-  }
-}
-
-async function queueNext() {
-  const { channel_id, id, content, method } = queue[0];
-
-  if (method === "GET") {
-    const hasReaction = await fetchMessageReaction(id, channel_id);
-    const match = egg_reg.test(content);
-
-    if (!hasReaction && match)
-      await reactionAction(id, channel_id, "PUT");
-    else if (hasReaction && !match)
-      await reactionAction(id, channel_id, "DELETE");
-
-  } else {
-    await reactionAction(id, channel_id, method);
+  async hasEggReaction(channel_id: string, id: string) {
+    return (await ctx.api.fetch({
+      method: "GET",
+      urlPath: { channels: channel_id },
+      endpoint: "messages",
+      query: {
+        around: id,
+        limit: 1,
+      }
+    }))[0].reactions?.find((v: any) => v.me && eggs.includes(v.emoji.name.trim())) ? true : false;
   }
 
-  setTimeout(queueShift, +(process.env.egg_cooldown!));
+  async manageReaction(channel_id: string, id: string, method: "PUT" | "DELETE") {
+    await ctx.api.fetch({
+      method: method,
+      urlPath: {
+        channels: channel_id,
+        messages: id,
+        reactions: Math.random() * 100 > +(process.env.rare_egg_chance!)
+          ? process.env.egg! 
+          : process.env.rare_egg!
+      },
+      endpoint: "@me"
+    });
+  }
+
+  async add({ channel_id, id, content }: queueSlot, method: "PUT" | "GET" | "DELETE") {
+    this.queue.push({ channel_id, id, content: content || "", method });
+
+    if (this.queue.length === 1)
+      this.queueNext();
+  }
+
+  async queueShift() {
+    this.queue.shift();
+    if (this.queue.length > 0) {
+      this.queueNext();
+    }
+  }
+
+  async queueNext() {
+    const { channel_id, id, content, method } = this.queue[0];
+
+    if (method === "GET") {
+      const hasReaction = await this.hasEggReaction(channel_id, id);
+      const match = egg_reg.test(content);
+  
+      if (!hasReaction && match)
+        await this.manageReaction(channel_id, id, "PUT");
+      else if (hasReaction && !match)
+        await this.manageReaction(channel_id, id, "DELETE");
+  
+    } else {
+      await this.manageReaction(channel_id, id, method);
+    }
+  
+    setTimeout(this.queueShift.bind(this), +(process.env.egg_cooldown!));
+  }
 }
 
 interface queueSlot {
