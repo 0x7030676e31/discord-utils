@@ -11,7 +11,7 @@ export default {
     ctx = context;
   },
   async execute(d: any, _: string) {
-    if (!d.content || (!egg_reg.test(d.content) && !d.content.includes(process.env.egg)))
+    if (!d.content || !egg_reg.test(d.content))
       return
 
     queueAdd(d);

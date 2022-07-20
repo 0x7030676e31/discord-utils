@@ -14,6 +14,7 @@ export default class websocketHandler {
     switch: [],
     ready: [],
   };
+  wsAllowedCodes: number[] = [1001, 1006]
   wsFailed: number[] = [];
   initialized: boolean = false;
   global: any = {};
@@ -39,7 +40,7 @@ export default class websocketHandler {
     this.handleOP(op, d);
 
     if (t === "READY") {
-      this.events.ready.forEach((f) => f());
+      this.events.ready.forEach((f) => f(d.session_id));
       if (!this.initialized) this.modules.forEach((m) => m.ready?.(d, this));
       this.initialized = true;
       return
@@ -51,11 +52,11 @@ export default class websocketHandler {
   async handleOP(op: number, d: any) {
     switch (op) {
       case 1:
-        this.heartbeat(0);
+        this.heartbeat(this.websockets[0]);
         break;
 
       case 10:
-        this.websockets[0].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, 0);
+        this.websockets[0].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, this.websockets[0]);
         break;
 
       case 11:
@@ -64,11 +65,10 @@ export default class websocketHandler {
     }
   }
 
-  async heartbeat(id: number) {
-    this.websockets[id].ws.send(
-      JSON.stringify({ op: 1, d: this.websockets[id].seq })
+  async heartbeat(ws: SocketQueue) {
+    ws.ws.send(
+      JSON.stringify({ op: 1, d: ws.seq })
     );
-    console.log(id);
   }
 
   async messageBackup(payload: string) {
@@ -77,11 +77,11 @@ export default class websocketHandler {
     if (s) this.websockets[1].seq = s;
 
     if (op === 1)
-      this.heartbeat(1);
+      this.heartbeat(this.websockets[1]);
     else if (op === 10)
-      this.websockets[1].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, 1);
+      this.websockets[1].heartbeat = setInterval(this.heartbeat.bind(this), d.heartbeat_interval, this.websockets[1]);
 
-    if (t === "READY") this.events.ready.forEach((f) => f());
+    if (t === "READY") this.events.ready.forEach((f) => f(d.session_id));
   }
 
   loadModules(checkEnv: boolean = true) {
@@ -126,13 +126,13 @@ export default class websocketHandler {
   }
 
   getFailedLength() {
-    return this.wsFailed.filter(v => v !== 1006).length;
+    return this.wsFailed.filter(v => !this.wsAllowedCodes.includes(v)).length;
   }
 
   close(code: number) {
     this.wsFailed.push(code);
     this.events.close.forEach((f) => f(code));
-    if (code === 1006)
+    if (this.wsAllowedCodes.includes(code))
       return
 
     if (this.getFailedLength() !== 5) {
@@ -143,13 +143,11 @@ export default class websocketHandler {
   }
 
   closeMain(code: number) {
-    console.log(`Closing Main: ${code}`);
     this.close(code);
     this.switchWebsocket();
   }
 
   closeBackup(code: number) {
-    console.log(`Closing Backup: ${code}`);
     this.close(code);
     
     clearInterval(this.websockets[1].heartbeat);
