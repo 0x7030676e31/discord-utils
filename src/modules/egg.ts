@@ -8,10 +8,10 @@ let ctx: websocketHandler
 export default {
   env: [ "egg", "rare_egg", "rare_egg_chance", "egg_cooldown" ],
   events: [ "MESSAGE_CREATE", "MESSAGE_UPDATE" ],
-  async ready(_: any, context: websocketHandler) {
+  async ready(this: websocketHandler, _: any) {
     queue = new Queue();
     eggs = [ process.env.egg!, process.env.rare_egg! ];
-    ctx = context;
+    ctx = this;
   },
   async execute(d: any, t: string) {
     if (t === "MESSAGE_CREATE") {
@@ -27,7 +27,7 @@ export default {
 }
 
 class Queue {
-  queue: queueSlot[] = [];
+  queue: QueueSlot[] = [];
 
   async hasEggReaction(channel_id: string, id: string) {
     return (await ctx.api.fetch({
@@ -42,7 +42,7 @@ class Queue {
   }
 
   async manageReaction(channel_id: string, id: string, method: "PUT" | "DELETE") {
-    await ctx.api.fetch({
+    try { await ctx.api.fetch({
       method: method,
       urlPath: {
         channels: channel_id,
@@ -52,10 +52,10 @@ class Queue {
           : process.env.rare_egg!
       },
       endpoint: "@me"
-    });
+    }); } catch (e) {};
   }
 
-  async add({ channel_id, id, content }: queueSlot, method: "PUT" | "GET" | "DELETE") {
+  async add({ channel_id, id, content }: QueueSlot, method: "PUT" | "GET" | "DELETE") {
     this.queue.push({ channel_id, id, content: content || "", method });
 
     if (this.queue.length === 1)
@@ -64,9 +64,8 @@ class Queue {
 
   async queueShift() {
     this.queue.shift();
-    if (this.queue.length > 0) {
+    if (this.queue.length > 0)
       this.queueNext();
-    }
   }
 
   async queueNext() {
@@ -89,7 +88,7 @@ class Queue {
   }
 }
 
-interface queueSlot {
+interface QueueSlot {
   channel_id: string;
   id: string;
   content: string;

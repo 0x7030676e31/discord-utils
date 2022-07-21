@@ -41,7 +41,7 @@ export default class websocketHandler {
 
     if (t === "READY") {
       this.events.ready.forEach((f) => f(d.session_id));
-      if (!this.initialized) this.modules.forEach((m) => m.ready?.(d, this));
+      if (!this.initialized) this.modules.forEach((m) => m.ready?.apply(this, [d]));
       this.initialized = true;
       return
     }
