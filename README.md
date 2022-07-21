@@ -10,3 +10,6 @@
 - rare_egg: just rare egg
 - rare_egg_chance: chance for rare egg (in %)
 - egg_cooldown: milliseconds between requests
+
+# math
+- math_cooldown: milliseconds between requests

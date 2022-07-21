@@ -5,17 +5,19 @@ const egg_reg = /(?<![a-z])egg/i
 let queue: Queue;
 let eggs: string[]
 let ctx: websocketHandler
+let selfID: string;
 export default {
   env: [ "egg", "rare_egg", "rare_egg_chance", "egg_cooldown" ],
   events: [ "MESSAGE_CREATE", "MESSAGE_UPDATE" ],
-  async ready(this: websocketHandler, _: any) {
+  async ready(this: websocketHandler, d: any) {
     queue = new Queue();
     eggs = [ process.env.egg!, process.env.rare_egg! ];
     ctx = this;
+    selfID = d.user.id;
   },
   async execute(d: any, t: string) {
     if (t === "MESSAGE_CREATE") {
-      if (!d.content || !egg_reg.test(d.content))
+      if (!d.content || !egg_reg.test(d.content) || d.author.id === selfID)
         return
 
       queue.add(d, "PUT");

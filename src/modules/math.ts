@@ -149,7 +149,7 @@ class Eval {
       return
     
     queue.add({
-      content: `=${result}`,
+      content: result.isNaN() ? "Do you really think it will work? Have an egg instead :egg:" : `=${result}`,
       id: this.id,
       channel: this.channel_id,
       guild: this.guild_id,
