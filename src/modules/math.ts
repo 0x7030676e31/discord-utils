@@ -103,7 +103,7 @@ class Eval {
     rad: [1, 1, (num: Decimal) => num.mul(this.constants.pi).div(180)],
     deg: [1, 1, (num: Decimal) => num.mul(180).div(this.constants.pi)],
     floor: [1, 1, (num: Decimal) => num.floor()],
-    ceil: [0, 0, (num: Decimal) => num.ceil()],
+    ceil: [1, 1, (num: Decimal) => num.ceil()],
     round: [1, 1, (num: Decimal) => num.round()],
     sqrt: [1, 1, (num: Decimal) => num.sqrt()],
     cbrt: [1, 1, (num: Decimal) => num.cbrt()],
