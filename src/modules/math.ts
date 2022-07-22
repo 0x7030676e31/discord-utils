@@ -159,7 +159,7 @@ class Eval {
       return
     
     Decimal.set({
-      precision: 30,
+      precision: 35,
     });
     
     if (result.isNaN())
