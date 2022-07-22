@@ -2,7 +2,7 @@ import websocketHandler from "../wsHandler";
 import Decimal from "decimal.js";
 
 Decimal.set({
-  precision: 50,
+  precision: 100,
 });
 
 let ctx: websocketHandler;
