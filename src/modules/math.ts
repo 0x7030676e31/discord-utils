@@ -2,7 +2,7 @@ import websocketHandler from "../wsHandler";
 import Decimal from "decimal.js";
 
 Decimal.set({
-  precision: 25,
+  precision: 50,
 });
 
 let ctx: websocketHandler;
@@ -107,6 +107,7 @@ class Eval {
     round: [1, 1, (num: Decimal) => num.round()],
     sqrt: [1, 1, (num: Decimal) => num.sqrt()],
     cbrt: [1, 1, (num: Decimal) => num.cbrt()],
+    ln: [1, 1, (num: Decimal) => num.ln()],
     log: [1, 2, (num: Decimal, num2?: Decimal) => num.log(num2)],
     exp: [1, 1, (num: Decimal) => num.exp()],
     min: [1, Infinity, (...nums: Decimal[]) => Decimal.min(...nums)],
@@ -137,6 +138,15 @@ class Eval {
     this.guild_id = guild_id;
   }
 
+  send(content: string) {
+    queue.add({
+      content: content,
+      id: this.id,
+      channel: this.channel_id,
+      guild: this.guild_id,
+    });
+  }
+
   async calculate() {
     if (!this.lexer())
       return
@@ -148,12 +158,18 @@ class Eval {
     if (result === null)
       return
     
-    queue.add({
-      content: result.isNaN() ? "Do you really think it will work? Have an egg instead :egg:" : `=${result}`,
-      id: this.id,
-      channel: this.channel_id,
-      guild: this.guild_id,
+    Decimal.set({
+      precision: 30,
     });
+    
+    if (result.isNaN())
+      this.send("Do you really think it will work? Have an egg instead :egg:");
+    else if (result.toString() === "Infinity")
+      this.send("I can't count to that many eggs, it's like counting sand in the desert");
+    else if (result.toString() === "-Infinity")
+      this.send("I can't count to that many eggs, it's like counting how many times \"egg\" has been said");
+    else
+      this.send(`=${result}`);
   }
 
   lexer() {
