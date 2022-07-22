@@ -8,16 +8,18 @@ Decimal.set({
 let ctx: websocketHandler;
 let queue: Queue;
 let selfID: string;
+let channels: string[];
 export default {
-  env: [ "math_cooldown" ],
+  env: [ "math_cooldown", "math_allowed_in" ],
   async ready(this: websocketHandler, d: any) {
     ctx = this;
     queue = new Queue();
     selfID = d.user.id;
+    channels = process.env.math_allowed_in!.split(/\s*,\s*/g);
   },
   events: [ "MESSAGE_CREATE" ],
   async execute(d: any, _: string) {
-    if (!d.content || d.author.id === selfID)
+    if (!d.content || d.author.id === selfID || !channels.includes(d.channel_id))
       return
 
     const expr = new Eval(d);
